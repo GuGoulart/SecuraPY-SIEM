@@ -11,9 +11,6 @@ A CyberShield Ltda. Uma plataforma com banco de dados, API REST, Machine Learnin
 | Gustavo Goulart | RM570401 | B: API REST + Docker (D, F) |
 | Thaís Akemi | RM573199 | C: Web + LLM + integração final (E, G, compose/integração) |
 
-> Divisão baseada na sugestão do enunciado para equipe de 3 (seção 7). Ajustem nomes, RMs e a divisão antes de entregar. A seção [Divisão de tarefas](#divisão-de-tarefas)
-> detalha quais arquivos ficaram com cada integrante.
-
 ---
 
 ## Arquitetura
