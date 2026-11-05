@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block titulo %}IP {{ consulta }} · SecuraPy{% endblock %}
+{% block conteudo %}
+<h1>IP {{ consulta }}</h1>
+{% if erro %}
+  <p class="erro" role="alert">{{ erro }}</p>
+{% else %}
+<section class="grade">
+  <article class="cartao">
+    <h2>Machine Learning</h2>
+    {% if p.ml %}
+      <p class="grande">{{ "%.2f" | format(p.ml.score) }}</p>
+      <p>Rótulo: <strong>{{ p.ml.rotulo }}</strong> · Risco:
+        <span class="risco risco-{{ p.ml.risco | lower }}">{{ p.ml.risco }}</span></p>
+      <ul class="lista">{% for k, v in p.ml.features.items() %}<li>{{ k }}: {{ v }}</li>{% endfor %}</ul>
+    {% else %}<p>Sem dados suficientes ou modelo indisponível.</p>{% endif %}
+    {% if p.anomalia %}<p>Isolation Forest: <strong>{{ "ANOMALIA" if p.anomalia.anomalia else "normal" }}</strong></p>{% endif %}
+  </article>
+
+  <article class="cartao">
+    <h2>Geolocalização</h2>
+    {% if p.enriquecimento %}
+    <ul class="lista">
+      <li>Cidade: {{ p.enriquecimento.cidade }}</li>
+      <li>Região: {{ p.enriquecimento.regiao }}</li>
+      <li>País: {{ p.enriquecimento.pais }}</li>
+      <li>Organização: {{ p.enriquecimento.org }}</li>
+    </ul>
+    {% else %}<p>—</p>{% endif %}
+  </article>
+
+  <article class="cartao">
+    <h2>Assistente (LLM)</h2>
+    {% if p.assistente %}
+      <p><span class="sev sev-{{ {'CRITICO':'critica','SUSPEITO':'media','NORMAL':'baixa'}[p.assistente.classificacao] }}">{{ p.assistente.classificacao }}</span>
+         <small>fonte: {{ p.assistente.fonte }}</small></p>
+      <p>{{ p.assistente.explicacao }}</p>
+      {% if p.assistente.flags %}<p class="aviso">Flags: {{ p.assistente.flags | join(", ") }}</p>{% endif %}
+      <p class="nota">Sugestão para triagem — não é decisão automática.</p>
+    {% else %}<p>Sem eventos para explicar.</p>{% endif %}
+  </article>
+</section>
+
+<section class="cartao">
+  <h2>Alertas relacionados ({{ p.total_alertas }})</h2>
+  <table>
+    <thead><tr><th>Quando</th><th>Severidade</th><th>Regra</th><th>Descrição</th></tr></thead>
+    <tbody>
+    {% for a in p.alertas %}
+      <tr><td>{{ a.timestamp }}</td><td><span class="sev sev-{{ a.severidade }}">{{ a.severidade }}</span></td>
+          <td>{{ a.regra }}</td><td title="{{ a.descricao }}">{{ a.descricao }}</td></tr>
+    {% else %}<tr><td colspan="4">Nenhum alerta.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="cartao">
+  <h2>Eventos ({{ p.total_eventos }})</h2>
+  <table>
+    <thead><tr><th>Quando</th><th>Fonte</th><th>Tipo</th><th>Detalhes</th></tr></thead>
+    <tbody>
+    {% for e in p.eventos %}
+      <tr><td>{{ e.timestamp }}</td><td>{{ e.fonte }}</td><td>{{ e.tipo }}</td><td><code>{{ e.detalhes }}</code></td></tr>
+    {% else %}<tr><td colspan="4">Nenhum evento para este IP.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

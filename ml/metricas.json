@@ -1,0 +1,175 @@
+{
+  "features": [
+    "falhas_login",
+    "portas_distintas",
+    "na_blacklist",
+    "web_erros"
+  ],
+  "modelo": "RandomForest",
+  "pipeline": "StandardScaler -> RandomForest",
+  "validacao_cruzada": {
+    "folds": 5,
+    "precision": {
+      "media": 0.95,
+      "desvio": 0.035
+    },
+    "recall": {
+      "media": 0.929,
+      "desvio": 0.034
+    },
+    "f1": {
+      "media": 0.939,
+      "desvio": 0.025
+    },
+    "matriz_confusao": [
+      [
+        292,
+        10
+      ],
+      [
+        14,
+        184
+      ]
+    ]
+  },
+  "torneio": {
+    "RandomForest": {
+      "precision": {
+        "media": 0.95,
+        "desvio": 0.035
+      },
+      "recall": {
+        "media": 0.929,
+        "desvio": 0.034
+      },
+      "f1": {
+        "media": 0.939,
+        "desvio": 0.025
+      }
+    },
+    "SVM": {
+      "precision": {
+        "media": 0.953,
+        "desvio": 0.03
+      },
+      "recall": {
+        "media": 0.909,
+        "desvio": 0.047
+      },
+      "f1": {
+        "media": 0.93,
+        "desvio": 0.026
+      }
+    },
+    "KNN": {
+      "precision": {
+        "media": 0.943,
+        "desvio": 0.019
+      },
+      "recall": {
+        "media": 0.914,
+        "desvio": 0.045
+      },
+      "f1": {
+        "media": 0.928,
+        "desvio": 0.026
+      }
+    }
+  },
+  "teste_logs_reais": {
+    "precisao": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "matriz_confusao": [
+      [
+        4,
+        0
+      ],
+      [
+        0,
+        3
+      ]
+    ],
+    "por_ip": {
+      "10.0.0.5": {
+        "features": {
+          "falhas_login": 0,
+          "portas_distintas": 0,
+          "na_blacklist": 0,
+          "web_erros": 0
+        },
+        "real": 0,
+        "previsto": 0,
+        "score": 0.016
+      },
+      "185.220.101.1": {
+        "features": {
+          "falhas_login": 11,
+          "portas_distintas": 7,
+          "na_blacklist": 1,
+          "web_erros": 6
+        },
+        "real": 1,
+        "previsto": 1,
+        "score": 1.0
+      },
+      "192.168.1.10": {
+        "features": {
+          "falhas_login": 0,
+          "portas_distintas": 0,
+          "na_blacklist": 0,
+          "web_erros": 0
+        },
+        "real": 0,
+        "previsto": 0,
+        "score": 0.016
+      },
+      "192.168.1.20": {
+        "features": {
+          "falhas_login": 0,
+          "portas_distintas": 0,
+          "na_blacklist": 0,
+          "web_erros": 0
+        },
+        "real": 0,
+        "previsto": 0,
+        "score": 0.016
+      },
+      "192.168.1.45": {
+        "features": {
+          "falhas_login": 0,
+          "portas_distintas": 0,
+          "na_blacklist": 0,
+          "web_erros": 0
+        },
+        "real": 0,
+        "previsto": 0,
+        "score": 0.016
+      },
+      "45.33.32.156": {
+        "features": {
+          "falhas_login": 3,
+          "portas_distintas": 2,
+          "na_blacklist": 1,
+          "web_erros": 3
+        },
+        "real": 1,
+        "previsto": 1,
+        "score": 0.91
+      },
+      "91.240.118.172": {
+        "features": {
+          "falhas_login": 5,
+          "portas_distintas": 3,
+          "na_blacklist": 1,
+          "web_erros": 3
+        },
+        "real": 1,
+        "previsto": 1,
+        "score": 0.97
+      }
+    }
+  },
+  "sha256_modelo": "00902dc918b0799d47706d9a7a206daf825901d8ae02541baeac1210da85116d",
+  "aviso": "Acurácia omitida de propósito: com classes desbalanceadas ela mascara ataques perdidos. Em SOC, recall (ataques pegos) e precisão (alarmes falsos) dizem mais."
+}

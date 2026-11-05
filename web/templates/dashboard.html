@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Visão geral</h1>
+
+<section class="grade">
+  <article class="cartao">
+    <h2>Eventos por fonte</h2>
+    <p class="grande">{{ r.totais.eventos }}</p>
+    <ul class="barras">
+      {% for fonte in ["auth", "firewall", "web"] %}
+      {% set qtd = r.eventos_por_fonte.get(fonte, 0) %}
+      <li><span>{{ fonte }}</span>
+        <progress max="{{ r.totais.eventos or 1 }}" value="{{ qtd }}"></progress>
+        <strong>{{ qtd }}</strong></li>
+      {% endfor %}
+    </ul>
+  </article>
+
+  <article class="cartao">
+    <h2>Alertas por severidade</h2>
+    <p class="grande">{{ r.totais.alertas }}</p>
+    <ul class="barras">
+      {% for sev, qtd in r.alertas_por_severidade.items() %}
+      <li><span class="sev sev-{{ sev }}">{{ sev }}</span>
+        <progress class="p-{{ sev }}" max="{{ r.totais.alertas or 1 }}" value="{{ qtd }}"></progress>
+        <a href="{{ url_for('web.alertas', severidade=sev) }}"><strong>{{ qtd }}</strong></a></li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>
+
+<section class="cartao">
+  <h2>Top 10 IPs suspeitos <small>(ordenados pelo score de ML)</small></h2>
+  <table>
+    <thead><tr><th>IP</th><th>Eventos</th><th>Fontes</th><th>Score ML</th><th>Risco</th><th>Anomalia</th></tr></thead>
+    <tbody>
+    {% for t in r.top_ips %}
+      <tr>
+        <td><a href="{{ url_for('web.buscar_ip', ip=t.ip) }}">{{ t.ip }}</a></td>
+        <td>{{ t.eventos }}</td>
+        <td>{{ t.fontes | join(", ") }}</td>
+        <td>{{ "%.2f" | format(t.ml.score) if t.ml else "—" }}</td>
+        <td>{% if t.ml %}<span class="risco risco-{{ t.ml.risco | lower }}">{{ t.ml.risco }}</span>{% else %}—{% endif %}</td>
+        <td>{{ "sim" if t.anomalia else "não" }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6">Nenhum evento ainda. Rode <code>POST /api/analisar</code>.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="cartao">
+  <h2>Alertas mais recentes</h2>
+  <table>
+    <thead><tr><th>Quando</th><th>Severidade</th><th>Regra</th><th>IP</th><th>Descrição</th></tr></thead>
+    <tbody>
+    {% for a in r.alertas_recentes %}
+      <tr>
+        <td>{{ a.timestamp }}</td>
+        <td><span class="sev sev-{{ a.severidade }}">{{ a.severidade }}</span></td>
+        <td>{{ a.regra }}</td>
+        <td><a href="{{ url_for('web.buscar_ip', ip=a.ip) }}">{{ a.ip }}</a></td>
+        {# descrição pode vir de atacante: Jinja escapa no texto E no atributo title #}
+        <td title="{{ a.descricao }}">{{ a.descricao }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5">Nenhum alerta.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

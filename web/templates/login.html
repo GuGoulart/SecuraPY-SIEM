@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titulo %}Login · SecuraPy{% endblock %}
+{% block conteudo %}
+<section class="cartao login">
+  <h1>Acesso do operador</h1>
+  {% if erro %}<p class="erro" role="alert">{{ erro }}</p>{% endif %}
+  <form method="post" action="{{ url_for('web.login') }}" autocomplete="off">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <label>E-mail <input type="email" name="email" required maxlength="150"></label>
+    <label>Senha <input type="password" name="senha" required maxlength="200"></label>
+    <button type="submit">Entrar</button>
+  </form>
+</section>
+{% endblock %}

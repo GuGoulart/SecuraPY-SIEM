@@ -1,0 +1,6 @@
+# Blacklist de IPs maliciosos conhecidos (mesma do main.py do 1º semestre)
+# Um IP por linha. Linhas iniciadas com # são comentários.
+185.220.101.1
+45.33.32.156
+91.240.118.172
+23.94.5.100

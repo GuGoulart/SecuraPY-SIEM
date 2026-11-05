@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Alertas · SecuraPy{% endblock %}
+{% block conteudo %}
+<h1>Alertas {% if severidade %}<small>— {{ severidade }}</small>{% endif %}</h1>
+<form class="filtros" method="get" action="{{ url_for('web.alertas') }}">
+  <select name="severidade" aria-label="Severidade">
+    <option value="">todas</option>
+    {% for s in ["critica", "alta", "media", "baixa", "info"] %}
+    <option value="{{ s }}" {{ "selected" if s == severidade }}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Filtrar</button>
+</form>
+<section class="cartao">
+  <p>{{ total }} alerta(s) · página {{ pagina }}</p>
+  <table>
+    <thead><tr><th>Quando</th><th>Severidade</th><th>Regra</th><th>IP</th><th>Score ML</th><th>Descrição</th></tr></thead>
+    <tbody>
+    {% for a in itens %}
+      <tr><td>{{ a.timestamp }}</td><td><span class="sev sev-{{ a.severidade }}">{{ a.severidade }}</span></td>
+          <td>{{ a.regra }}</td><td><a href="{{ url_for('web.buscar_ip', ip=a.ip) }}">{{ a.ip }}</a></td>
+          <td>{{ "%.2f" | format(a.ml_score) if a.ml_score is defined and a.ml_score is not none else "—" }}</td>
+          <td title="{{ a.descricao }}">{{ a.descricao }}</td></tr>
+    {% else %}<tr><td colspan="6">Nenhum alerta.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <nav class="paginas">
+    {% if pagina > 1 %}<a href="{{ url_for('web.alertas', pagina=pagina-1, tamanho=tamanho, severidade=severidade or None) }}">← anterior</a>{% endif %}
+    {% if pagina * tamanho < total %}<a href="{{ url_for('web.alertas', pagina=pagina+1, tamanho=tamanho, severidade=severidade or None) }}">próxima →</a>{% endif %}
+  </nav>
+</section>
+{% endblock %}

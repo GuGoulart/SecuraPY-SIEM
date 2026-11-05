@@ -1,0 +1,75 @@
+# SecuraPy Platform — sobe API + MongoDB + MySQL juntos (Aula 11)
+#   cp .env.example .env   (e troque as senhas)
+#   docker compose up -d --build
+name: securapy
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: securapy-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USUARIO:?defina MONGO_USUARIO no .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_SENHA:?defina MONGO_SENHA no .env}
+    volumes:
+      - mongo_dados:/data/db
+    ports:
+      - "127.0.0.1:27017:27017"   # só localhost (Compass); a API usa a rede interna
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [securapy_net]
+
+  mysql:
+    image: mysql:8.4
+    container_name: securapy-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_SENHA:?defina MYSQL_ROOT_SENHA no .env}
+      MYSQL_DATABASE: ${MYSQL_BANCO:-securapy}
+      MYSQL_USER: ${MYSQL_USUARIO:-securapy}          # a API NÃO usa root
+      MYSQL_PASSWORD: ${MYSQL_SENHA:?defina MYSQL_SENHA no .env}
+    volumes:
+      - mysql_dados:/var/lib/mysql
+      - ./db/init_mysql.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    ports:
+      - "127.0.0.1:3306:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks: [securapy_net]
+
+  api:
+    build: .
+    image: securapy-api:latest
+    container_name: securapy-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MONGO_HOST: mongo                # nome do serviço = DNS interno do compose
+      MYSQL_HOST: mysql
+      ALERTAS_PORTA: "9999"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    ports:
+      - "5000:5000"   # API REST + dashboard
+      - "9999:9999"   # servidor TCP de alertas em tempo real (1º semestre)
+    # Log de acesso (A09): sai no stdout (docker compose logs api) e em /app/var/acesso.log
+    networks: [securapy_net]
+
+volumes:
+  mongo_dados:
+  mysql_dados:
+
+networks:
+  securapy_net:
+    name: securapy_net

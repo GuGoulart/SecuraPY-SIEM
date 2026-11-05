@@ -1,0 +1,27 @@
+
+Dados reais: 7 IPs (3 ataque) | sintéticos: 500 (198 ataque)
+
+=== Torneio (validação cruzada 5 folds, F1) ===
+RandomForest  F1 0.939 (+/- 0.025)
+SVM           F1 0.930 (+/- 0.026)
+KNN           F1 0.928 (+/- 0.026)
+Vencedor: RandomForest
+
+=== Relatório de métricas (validação cruzada, modelo vencedor) ===
+Precisão: 0.950 (+/- 0.035)
+Recall:   0.929 (+/- 0.034)
+F1:       0.939 (+/- 0.025)
+Matriz de confusão [[VN FP] [FN VP]]: [[292, 10], [14, 184]]
+
+=== Teste nos logs reais (dados nunca vistos no treino) ===
+Precisão 1.00 | Recall 1.00 | F1 1.00
+  10.0.0.5         score=0.02 -> normal
+  185.220.101.1    score=1.00 -> ataque
+  192.168.1.10     score=0.02 -> normal
+  192.168.1.20     score=0.02 -> normal
+  192.168.1.45     score=0.02 -> normal
+  45.33.32.156     score=0.91 -> ataque
+  91.240.118.172   score=0.97 -> ataque
+
+Modelo salvo: /home/claude/securaPy_platform/ml/modelo.pkl
+SHA-256: 00902dc918b0799d47706d9a7a206daf825901d8ae02541baeac1210da85116d
