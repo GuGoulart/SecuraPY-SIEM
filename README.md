@@ -1,8 +1,7 @@
 # SecuraPy Platform — SIEM como Plataforma de Segurança
 
 Trabalho Final (GS) de **Coding for Security**, 2º semestre, FIAP. Prof. Fabio Bara.
-A CyberShield Ltda. evoluiu o MVP do SecuraPy CLI (1º semestre) para uma plataforma com
-banco de dados, API REST, Machine Learning, dashboard web, assistente com LLM e Docker.
+A CyberShield Ltda. Uma plataforma com banco de dados, API REST, Machine Learning, dashboard web, assistente com LLM e Docker.
 
 ## Integrantes
 
