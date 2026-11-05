@@ -8,9 +8,9 @@ banco de dados, API REST, Machine Learning, dashboard web, assistente com LLM e 
 
 | Nome | RM | Responsabilidade (módulos) |
 |------|----|----------------------------|
-| _(integrante 1)_ | RM_____ | Pessoa A: Núcleo + Persistência + ML (A, B, C) |
-| Gustavo | RM_____ | Pessoa B: API REST + Docker (D, F) |
-| _(integrante 3)_ | RM_____ | Pessoa C: Web + LLM + integração final (E, G, compose/integração) |
+| Thayná Correia | RM573832 | A: Núcleo + Persistência + ML (A, B, C) |
+| Gustavo Goulart | RM570401 | B: API REST + Docker (D, F) |
+| Thaís Akemi | RM573199 | C: Web + LLM + integração final (E, G, compose/integração) |
 
 > Divisão baseada na sugestão do enunciado para equipe de 3 (seção 7). Ajustem nomes, RMs e a divisão antes de entregar. A seção [Divisão de tarefas](#divisão-de-tarefas)
 > detalha quais arquivos ficaram com cada integrante.
