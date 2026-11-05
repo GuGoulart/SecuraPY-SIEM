@@ -165,24 +165,6 @@ Códigos de status usados: 200, 201, 400 (entrada inválida), 401 (sem ou com to
 
 ---
 
-## O que foi reaproveitado do 1º semestre
-
-| Arquivo do CP1 | Onde está | O que mudou |
-|---|---|---|
-| `coletor.py` | `core/` | Só `encoding="utf-8"`, tratamento de arquivo ilegível e ordem determinística (marcado `[GS]`) |
-| `regras.py` + `config/regras.json` | `core/` e `config/` | **Sem alteração** |
-| `detector.py` | `core/` | Só o import do teste isolado |
-| `enriquecimento.py` | `core/` | Usa `ipaddress`, token por variável de ambiente, backoff em 429 e chave para modo offline |
-| `relatorios.py` | `core/` | Sem alteração; o CLI antigo continua lá |
-| `servidor_alertas.py` / `cliente_alertas.py` | `alertas/` | `iniciar_em_thread()` para rodar junto com a API, porta por env e host/porta por argumento |
-| `logs/*.log` | `logs/` | Sem alteração |
-| Blacklist do `main.py` | `config/blacklist.txt` | Saiu do código e foi para configuração |
-
-As camadas novas (db, ml, api, web, ia, Docker) **chamam** o núcleo sem reescrevê-lo. O comportamento
-de detecção é idêntico ao do 1º semestre.
-
----
-
 ## Decisões e limitações (honestidade técnica)
 
 - **A2 cita 10 FAILs; o `auth.log` tem 11** para `185.220.101.1`. Com 11 falhas o detector classifica
