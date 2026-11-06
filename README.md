@@ -62,34 +62,107 @@ securaPy_platform/
 (`@token_obrigatorio` e `@requer_nivel` com `@wraps`, na ordem certa), *Adapter* (`core/contrato.py`)
 e **pool de conexões em vez de Singleton** (MySQL).
 
+**Fluxo de dados:**
+
+```
+logs/*.log → core/coletor.py → plataforma.analisar_eventos() → core/regras.py + core/detector.py
+  → core/contrato.py (hash) → db/mongo_repo.py → ml/classificar.py (score) → alertas/central.py (TCP)
+  → web/views.py → dashboard.html
+```
+
+Cada fonte tem seu próprio parser no coletor, e todos devolvem a mesma estrutura
+(`timestamp`, `fonte`, `tipo`, `ip`, `detalhes`, `linha_original`).
+
+**Persistência:** o MongoDB guarda eventos e alertas (alto volume, formato variável por fonte), com índices em
+`ip`, `timestamp` e `fonte+timestamp`, `hash` único e TTL em `ingerido_em`. O MySQL guarda os operadores
+(`UNIQUE` no e-mail, `CHECK` no nível, transações), com queries parametrizadas e senha em scrypt.
+
 ---
 
 ## Como executar (Docker, o modo de entrega)
 
-**Pré-requisitos:** Docker Desktop (ou Docker Engine + Compose v2) e Git. Para rodar os scripts no host
-(console de alertas, status e cenários), use Python 3.12 ou mais novo.
+### Pré-requisitos
 
-```bash
-# 1. Configurar os segredos (o .env nunca vai para o Git)
-cp .env.example .env            # Windows PowerShell: Copy-Item .env.example .env
-#    Edite o .env e troque TODAS as senhas e chaves "troque-..."
+- **Docker Desktop** (ou Docker Engine + Compose v2) instalado e **em execução** (no Windows, o ícone da baleia fica verde com "Engine running").
+- **Python 3.12+** no host, para os scripts de status, de cenários e o console de alertas (`python --version`).
+- Git, para clonar o repositório.
 
-# 2. Subir API + MongoDB + MySQL
-docker compose up -d --build
-docker compose ps               # os 3 contêineres devem estar "running (healthy)"
+### Passo a passo
 
-# 3. Conferir que tudo está no ar (Docker SDK)
-pip install docker requests
-python scripts/status_containers.py
+**1. Entrar na pasta do projeto**
 
-# 4. Ingestão inicial (migração dos 3 logs para o MongoDB)
-docker compose exec api python -m db.migracao
+```powershell
+cd securaPy_platform
 ```
 
-- Dashboard: <http://localhost:5000>. O login usa `ADMIN_EMAIL` e `ADMIN_SENHA` do `.env`.
-- API: <http://localhost:5000/api/health>.
-- Alertas em tempo real: abra **dois** terminais e rode em cada um `python alertas/cliente_alertas.py`.
-  Depois chame `POST /api/analisar`: os alertas críticos e altos aparecem nos dois consoles.
+**2. Criar o `.env`** (só na primeira vez; o `.env` nunca vai para o Git)
+
+```powershell
+Copy-Item .env.example .env     # Linux/Mac: cp .env.example .env
+notepad .env                    # troque TODAS as senhas e chaves "troque-..."
+```
+
+Evite `$` e `#` nas senhas (o Compose interpreta esses caracteres). `ADMIN_EMAIL` e `ADMIN_SENHA` definem o
+operador administrador criado na primeira subida.
+
+**3. Subir API + MongoDB + MySQL**
+
+```powershell
+docker compose up -d --build
+```
+
+A primeira execução leva alguns minutos (download das imagens e instalação das dependências).
+
+**4. Aguardar os serviços ficarem prontos**
+
+```powershell
+docker compose ps
+```
+
+Repita até `securapy-api`, `securapy-mongo` e `securapy-mysql` aparecerem como **`(healthy)`** (cerca de 30–60 s).
+
+**5. Instalar as dependências dos scripts do host** (só na primeira vez)
+
+```powershell
+pip install docker requests
+```
+
+**6. Verificar**
+
+```powershell
+python scripts/status_containers.py           # 3 contêineres "running" (Docker SDK)
+
+$env:ADMIN_EMAIL="admin@cybershield.local"    # Linux/Mac: export ADMIN_EMAIL=...
+$env:ADMIN_SENHA="<valor de ADMIN_SENHA no .env>"
+python scripts/testar_cenarios.py             # deve terminar com "26/26 cenários passaram"
+```
+
+**7. Usar**
+
+- **Dashboard:** <http://localhost:5000>, com login de `ADMIN_EMAIL` / `ADMIN_SENHA`.
+- **API:** <http://localhost:5000/api/health>.
+- **Alertas em tempo real:** abra **dois** terminais na pasta do projeto e rode `python alertas/cliente_alertas.py` em cada um.
+  Depois rode `python scripts/testar_cenarios.py` (ou chame `POST /api/analisar`): os alertas críticos e altos
+  aparecem nos dois consoles.
+- **Ingestão inicial dos logs no MongoDB:** `docker compose exec api python -m db.migracao`.
+
+**8. Parar**
+
+```powershell
+docker compose down        # para tudo e mantém os dados
+docker compose down -v     # para e APAGA os volumes (MongoDB e MySQL zerados)
+```
+
+### Solução de problemas
+
+| Sintoma | Solução |
+|---|---|
+| `docker` não reconhecido / erro de conexão com o daemon | O Docker Desktop não está aberto: abra e aguarde o "Engine running" |
+| Contêiner `unhealthy` ou reiniciando | `docker compose logs api --tail 30` para ver o motivo |
+| Login retorna **401** com a senha correta | O `.env` foi alterado depois da primeira subida: `docker compose down -v` e `docker compose up -d` |
+| Login retorna **429** | Mais de 10 tentativas erradas em 5 min: aguarde ou rode `docker compose restart api` |
+| Porta 5000, 3306 ou 27017 em uso | Feche o serviço local que usa a porta (MySQL ou MongoDB instalados no host, por exemplo) |
+| Sem internet | Use `ENRIQUECIMENTO_ATIVO=false` no `.env` (a geolocalização aparece como "Desconhecido") |
 
 ### Usando a API (curl)
 
@@ -168,35 +241,6 @@ Códigos de status usados: 200, 201, 400 (entrada inválida), 401 (sem ou com to
 
 ---
 
-## Visão técnica
-
-### Da versão CLI para a plataforma
-
-| Versão CLI (base) | Plataforma (GS) |
-|---|---|
-| Dados só em memória; fechou o programa, perdeu tudo | Eventos e alertas no **MongoDB**; usuários no **MySQL** |
-| Só regras fixas | **Machine learning** dá um score de risco por IP e ordena os alertas |
-| Saída no terminal | **API REST** com JWT e **dashboard web** |
-| Sem autenticação | Operadores com senha em hash (scrypt), níveis de acesso 1–5, respostas 401/403 |
-| Sem explicação dos eventos | **Assistente LLM** (com modo mock e fallback por regras) |
-| Execução manual | **Docker Compose**: API + MongoDB + MySQL com um comando |
-| Sem testes | 57 testes pytest + CI no GitHub Actions |
-
-O núcleo (coletor, regras, detector, servidor de alertas) foi mantido; as camadas novas o **chamam**.
-
-### MongoDB x MySQL
-
-| | MongoDB: eventos e alertas | MySQL: usuários/operadores |
-|---|---|---|
-| Modelo | Documentos (NoSQL), schema flexível | Tabelas (relacional), schema fixo |
-| Perfil dos dados | Alto volume, formato varia por fonte | Pouco volume, precisa de integridade |
-| Prioridade | Escrita rápida e agregação | `UNIQUE`, `CHECK`, transações (ACID) |
-| CAP | Tolera atraso para continuar aceitando logs | CP: autenticar errado é pior que ficar fora do ar |
-| Proteções | Índice único em `hash`, índices em `ip` e `timestamp`, TTL em `ingerido_em` | Queries parametrizadas (`%s`), senha em scrypt |
-| Código | `db/mongo_repo.py` | `db/mysql_repo.py` (único arquivo com SQL) |
-
----
-
 ## O que foi reaproveitado do 1º semestre
 
 | Arquivo do CP1 | Onde está | O que mudou |
@@ -210,7 +254,8 @@ O núcleo (coletor, regras, detector, servidor de alertas) foi mantido; as camad
 | `logs/*.log` | `logs/` | Sem alteração |
 | Blacklist do `main.py` | `config/blacklist.txt` | Saiu do código e foi para configuração |
 
-As camadas novas (db, ml, api, web, ia, Docker) **chamam** o núcleo sem reescrevê-lo. O comportamento
+Sobre esse núcleo foram adicionados persistência (MongoDB e MySQL), API REST com JWT, dashboard web,
+Machine Learning, assistente LLM, Docker e testes automatizados. As camadas novas **chamam** o núcleo sem reescrevê-lo. O comportamento
 de detecção é idêntico ao do 1º semestre.
 
 ---
@@ -224,7 +269,8 @@ de detecção é idêntico ao do 1º semestre.
   emitindo `CRITICA` e similares, como no 1º semestre.
 - **ML com poucos dados reais.** Os logs têm só 7 IPs, o que impede validação cruzada de 5 folds.
   Por isso o treino usa 500 amostras sintéticas (`random_state=42`, com 15% de normais "difíceis" e 3%
-  de ruído de rótulo). O modelo vencedor do torneio é testado nos **logs reais, que ele nunca viu**.
+  de ruído de rótulo). O vencedor do torneio (RandomForest com 100 árvores, num Pipeline com `StandardScaler`, contra SVM e KNN)
+  é testado nos **logs reais, que ele nunca viu**.
   A validação cruzada deu F1 de aproximadamente 0,94 (ver `ml/metricas.json`). A acurácia foi omitida
   de propósito, porque engana em dados desbalanceados.
 - **Integridade do modelo:** o SHA-256 é verificado **antes** do `joblib.load`, já que um pickle executa
