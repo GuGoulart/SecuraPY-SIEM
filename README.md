@@ -1,15 +1,18 @@
 # SecuraPy Platform — SIEM como Plataforma de Segurança
 
 Trabalho Final (GS) de **Coding for Security**, 2º semestre, FIAP. Prof. Fabio Bara.
-A CyberShield Ltda. Uma plataforma com banco de dados, API REST, Machine Learning, dashboard web, assistente com LLM e Docker.
+A CyberShield Ltda. evoluiu o SecuraPy, um SIEM de linha de comando, para uma plataforma com banco de dados,
+API REST, Machine Learning, dashboard web, assistente com LLM e Docker.
 
 ## Integrantes
 
 | Nome | RM | Responsabilidade (módulos) |
 |------|----|----------------------------|
-| Thayná Correia | RM573832 | A: Núcleo + Persistência + ML (A, B, C) |
-| Gustavo Goulart | RM570401 | B: API REST + Docker (D, F) |
-| Thaís Akemi | RM573199 | C: Web + LLM + integração final (E, G, compose/integração) |
+| Thayná Correia | RM573832 | Núcleo + Persistência + ML (A, B, C) |
+| Gustavo Goulart | RM570401 | API REST + Docker (D, F) |
+| Thaís Akemi | RM573199 | Web + LLM + integração final (E, G, compose/integração) |
+
+> A seção [Divisão de tarefas](#divisão-de-tarefas) detalha quais arquivos ficaram com cada integrante.
 
 ---
 
@@ -165,6 +168,53 @@ Códigos de status usados: 200, 201, 400 (entrada inválida), 401 (sem ou com to
 
 ---
 
+## Visão técnica
+
+### Da versão CLI para a plataforma
+
+| Versão CLI (base) | Plataforma (GS) |
+|---|---|
+| Dados só em memória; fechou o programa, perdeu tudo | Eventos e alertas no **MongoDB**; usuários no **MySQL** |
+| Só regras fixas | **Machine learning** dá um score de risco por IP e ordena os alertas |
+| Saída no terminal | **API REST** com JWT e **dashboard web** |
+| Sem autenticação | Operadores com senha em hash (scrypt), níveis de acesso 1–5, respostas 401/403 |
+| Sem explicação dos eventos | **Assistente LLM** (com modo mock e fallback por regras) |
+| Execução manual | **Docker Compose**: API + MongoDB + MySQL com um comando |
+| Sem testes | 57 testes pytest + CI no GitHub Actions |
+
+O núcleo (coletor, regras, detector, servidor de alertas) foi mantido; as camadas novas o **chamam**.
+
+### MongoDB x MySQL
+
+| | MongoDB: eventos e alertas | MySQL: usuários/operadores |
+|---|---|---|
+| Modelo | Documentos (NoSQL), schema flexível | Tabelas (relacional), schema fixo |
+| Perfil dos dados | Alto volume, formato varia por fonte | Pouco volume, precisa de integridade |
+| Prioridade | Escrita rápida e agregação | `UNIQUE`, `CHECK`, transações (ACID) |
+| CAP | Tolera atraso para continuar aceitando logs | CP: autenticar errado é pior que ficar fora do ar |
+| Proteções | Índice único em `hash`, índices em `ip` e `timestamp`, TTL em `ingerido_em` | Queries parametrizadas (`%s`), senha em scrypt |
+| Código | `db/mongo_repo.py` | `db/mysql_repo.py` (único arquivo com SQL) |
+
+---
+
+## O que foi reaproveitado do 1º semestre
+
+| Arquivo do CP1 | Onde está | O que mudou |
+|---|---|---|
+| `coletor.py` | `core/` | Só `encoding="utf-8"`, tratamento de arquivo ilegível e ordem determinística (marcado `[GS]`) |
+| `regras.py` + `config/regras.json` | `core/` e `config/` | **Sem alteração** |
+| `detector.py` | `core/` | Só o import do teste isolado |
+| `enriquecimento.py` | `core/` | Usa `ipaddress`, token por variável de ambiente, backoff em 429 e chave para modo offline |
+| `relatorios.py` | `core/` | Sem alteração; o CLI antigo continua lá |
+| `servidor_alertas.py` / `cliente_alertas.py` | `alertas/` | `iniciar_em_thread()` para rodar junto com a API, porta por env e host/porta por argumento |
+| `logs/*.log` | `logs/` | Sem alteração |
+| Blacklist do `main.py` | `config/blacklist.txt` | Saiu do código e foi para configuração |
+
+As camadas novas (db, ml, api, web, ia, Docker) **chamam** o núcleo sem reescrevê-lo. O comportamento
+de detecção é idêntico ao do 1º semestre.
+
+---
+
 ## Decisões e limitações (honestidade técnica)
 
 - **A2 cita 10 FAILs; o `auth.log` tem 11** para `185.220.101.1`. Com 11 falhas o detector classifica
@@ -210,10 +260,10 @@ Códigos de status usados: 200, 201, 400 (entrada inválida), 401 (sem ou com to
 
 | Integrante | Arquivos |
 |---|---|
-| Pessoa A (Núcleo + Persistência + ML) | `core/*`, `db/*`, `ml/*`, `tests/test_nucleo.py`, `tests/test_persistencia.py`, `tests/test_ml.py` |
-| Pessoa B (API + Docker) | `api/*`, `Dockerfile`, `docker-compose.yml`, `.env.example`, `scripts/status_containers.py`, `tests/test_api.py` |
-| Pessoa C (Web + LLM + integração) | `web/*`, `ia/assistente.py`, `alertas/central.py`, `plataforma.py`, `scripts/testar_cenarios.py`, `tests/test_assistente.py` |
-| Todos | `tests/`, `scripts/testar_cenarios.py`, README, vídeo |
+| Thayná (Núcleo + Persistência + ML) | `core/*`, `db/*`, `ml/*`, `tests/test_nucleo.py`, `tests/test_persistencia.py`, `tests/test_ml.py` |
+| Gustavo (API + Docker) | `api/*`, `Dockerfile`, `docker-compose.yml`, `.env.example`, `scripts/status_containers.py`, `tests/test_api.py` |
+| Thaís (Web + LLM + integração) | `web/*`, `ia/assistente.py`, `alertas/central.py`, `plataforma.py`, `scripts/testar_cenarios.py`, `tests/test_assistente.py` |
+| Todos | `tests/`, `scripts/testar_cenarios.py`, README, apresentação |
 
 ## Dependências
 
